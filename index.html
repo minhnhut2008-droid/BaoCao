@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b6b5c">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Báo cáo">
+<title>Báo cáo ngày – tuần – tháng</title>
+<style>
+:root{--bg:#eaf0f2;--cd:#fff;--tx:#14222b;--mu:#5a6b77;--bd:#cfd9de;--ac:#0b6b5c;--ax:#fff;--dg:#b4452a;--hl:#e3f1ee;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11191e;--cd:#1a252c;--tx:#e6eef2;--mu:#93a5b0;--bd:#2d3d47;--ac:#3fb8a3;--ax:#08201b;--dg:#e5846a;--hl:#1c332f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#11191e;--cd:#1a252c;--tx:#e6eef2;--mu:#93a5b0;--bd:#2d3d47;--ac:#3fb8a3;--ax:#08201b;--dg:#e5846a;--hl:#1c332f;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif}
+.w{max-width:860px;margin:0 auto;padding:12px 12px 40px}
+h1{font-size:19px;margin:6px 0 2px}
+.mu{color:var(--mu);font-size:13px}
+nav{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+nav button{flex:1;min-width:88px;padding:9px 6px;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:8px;font:inherit;font-weight:500;cursor:pointer}
+nav button.on{background:var(--ac);color:var(--ax);border-color:var(--ac)}
+.c{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+label{display:block;font-weight:500;font-size:13px;margin:10px 0 4px}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:70px;resize:vertical}
+button{font:inherit;cursor:pointer}
+.b{padding:9px 14px;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:7px;font-weight:500}
+.p{background:var(--ac);color:var(--ax);border-color:var(--ac)}
+.s{padding:5px 9px;font-size:13px}
+.r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.r>.g{flex:1;min-width:120px}
+.ir{display:grid;grid-template-columns:1.6fr 1fr .9fr 34px;gap:6px;margin-bottom:6px}
+.x{border:1px solid var(--bd);background:none;color:var(--dg);border-radius:7px;font-size:18px;line-height:1}
+.ch{display:inline-block;margin:4px 6px 0 0;padding:4px 9px;border-radius:14px;background:var(--hl);border:1px solid var(--bd);font-size:13px;cursor:pointer}
+.it{border-top:1px solid var(--bd);padding:9px 0}
+.it:first-child{border-top:0}
+.tag{font-size:12px;color:var(--dg);border:1px solid var(--dg);border-radius:10px;padding:0 7px;margin-left:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid var(--bd);padding:7px 8px;text-align:left;vertical-align:top}
+th{background:var(--hl)}
+.tw{overflow-x:auto}
+#toast{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;background:var(--tx);color:var(--bg);padding:10px 14px;border-radius:8px;display:none;z-index:9}
+.ok{color:var(--ac);font-weight:700}.no{color:var(--dg)}
+@media print{nav,.np,h1,.mu.np{display:none!important}body{background:#fff;color:#000}.c{border:0;padding:0}}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>Báo cáo ngày – tuần – tháng</h1>
+<div class="mu np">Bản chạy thử. Dữ liệu lưu ngay trên thiết bị này.</div>
+<nav>
+<button id="t-in" onclick="show('in')">Nhập báo cáo</button>
+<button id="t-rp" onclick="show('rp')">Báo cáo</button>
+<button id="t-ct" onclick="show('ct')">Danh mục</button>
+<button id="t-gr" onclick="show('gr')">Nhóm</button>
+</nav>
+<div id="main"></div>
+</div>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),KEY='bc_app_v1';
+let S,D={inds:[],for:null},tab='in',E=-1,CH=[],EX=[];
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>fmt(new Date());
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return fmt(d)};
+const vn=s=>s.slice(8)+'/'+s.slice(5,7)+'/'+s.slice(0,4);
+let dt=today();
+const rid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function range(t,s){if(t=='d')return[s,s];if(t=='m')return[s.slice(0,7)+'-01',s.slice(0,7)+'-31'];const w=(parse(s).getDay()+6)%7,a=addDays(s,-w);return[a,addDays(a,6)]}
+function seed(){return{me:{id:rid(),name:''},entries:[],cat:[
+{n:'Kiểm tra nhà trọ',inds:[{l:'Đã kiểm tra',u:'cơ sở'},{l:'Đạt',u:'cơ sở'},{l:'Vi phạm',u:'cơ sở'}],ext:false,uses:0,last:0},
+{n:'Tuyên truyền',inds:[{l:'Số buổi',u:'buổi'},{l:'Số người dự',u:'người'}],ext:false,uses:0,last:0},
+{n:'Tuần tra',inds:[{l:'Số ca',u:'ca'},{l:'Phát hiện vụ việc',u:'vụ'}],ext:false,uses:0,last:0}]}}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S||!S.cat)S=seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function msg(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(msg.t);msg.t=setTimeout(()=>e.style.display='none',3500)}
+const find=n=>S.cat.find(c=>c.n.toLowerCase()==String(n).trim().toLowerCase());
+const mname=e=>e.m==S.me.id?(S.me.name||'Tôi'):(e.mn||'Không tên');
+const nums=v=>v.map(i=>i.l+': '+i.x+(i.u?' '+i.u:'')).join(' · ');
+function dl(name,text,mime){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();msg('Đã tạo file '+name)}catch(e){msg('Không tải được file trong khung xem này. Hãy mở app ở tab riêng.')}}
+function show(t){tab=t;['in','rp','ct','gr'].forEach(k=>$('#t-'+k).classList.toggle('on',k==t));({in:vIn,rp:vRp,ct:vCt,gr:vGr})[t]()}
+
+/* ---------- Nhập báo cáo ---------- */
+function vIn(){
+$('#main').innerHTML=`<div class="c"><div class="r"><div class="g"><label>Tên người báo cáo</label><input value="${esc(S.me.name)}" oninput="S.me.name=this.value;save()" placeholder="Họ tên"></div>
+<div class="g"><label>Ngày</label><input type="date" value="${dt}" onchange="dt=this.value||today();renderList()"></div></div></div>
+<div class="c"><label>Tên nội dung</label><input id="nm" list="dl" autocomplete="off" placeholder="Gõ vài chữ để gợi ý…" oninput="nameChg()"><datalist id="dl"></datalist>
+<div id="hint" class="mu"></div>
+<label>Số liệu</label><div id="inds"></div><button class="b s" onclick="D.inds.push({l:'',u:'',x:''});renderInds()">Thêm chỉ tiêu</button>
+<label>Nội dung cụ thể</label><textarea id="nt" placeholder="Mô tả ngắn gọn công việc, kết quả"></textarea><div id="chips"></div>
+<div class="r" style="margin-top:12px"><button class="b p" onclick="addRow()">Lưu dòng này</button></div></div>
+<div class="c"><div class="r"><b class="g" id="lt"></b><button class="b s" onclick="copyY()">Sao chép từ hôm qua</button></div><div id="list"></div></div>`;
+const o=[...S.cat].sort((a,b)=>b.uses-a.uses||b.last-a.last);
+$('#dl').innerHTML=o.map(c=>`<option value="${esc(c.n)}">`).join('');
+renderInds();renderList();
+}
+function renderInds(){$('#inds').innerHTML=D.inds.length?D.inds.map((x,i)=>`<div class="ir"><input placeholder="Chỉ tiêu" value="${esc(x.l)}" oninput="D.inds[${i}].l=this.value"><input type="number" inputmode="decimal" step="any" placeholder="Số" value="${esc(x.x)}" oninput="D.inds[${i}].x=this.value"><input placeholder="Đơn vị" value="${esc(x.u)}" oninput="D.inds[${i}].u=this.value"><button class="x" onclick="D.inds.splice(${i},1);renderInds()">×</button></div>`).join(''):'<div class="mu">Chọn tên nội dung để hiện chỉ tiêu.</div>'}
+function nameChg(){
+const n=$('#nm').value.trim(),c=find(n);
+if(c){if(D.for!==c.n){D.inds=c.inds.map(i=>({l:i.l,u:i.u,x:''}));D.for=c.n;renderInds()}$('#hint').textContent=c.ext?'Mục ngoài danh mục chuẩn (đã dùng trước đó).':'Mục trong danh mục.'}
+else{D.for=null;if(n&&!D.inds.length){D.inds=[{l:'',u:'',x:''}];renderInds()}$('#hint').textContent=n?'Mục mới: sẽ được lưu và đánh dấu “ngoài danh mục”.':''}
+const seen=[];S.entries.filter(e=>e.m==S.me.id&&e.n.toLowerCase()==n.toLowerCase()&&e.t).sort((a,b)=>b.u-a.u).forEach(e=>{if(!seen.includes(e.t))seen.push(e.t)});
+CH=seen.slice(0,3);
+$('#chips').innerHTML=CH.map((t,i)=>`<span class="ch" onclick="$('#nt').value=CH[${i}]">${esc(t.length>48?t.slice(0,48)+'…':t)}</span>`).join('');
+}
+function addRow(){
+const n=$('#nm').value.trim();if(!n)return msg('Hãy nhập tên nội dung.');
+const v=D.inds.filter(i=>i.l.trim()&&String(i.x).trim()!==''&&!isNaN(Number(i.x))).map(i=>({l:i.l.trim(),u:i.u.trim(),x:Number(i.x)}));
+const now=Date.now();let c=find(n);
+S.entries.push({id:rid(),m:S.me.id,mn:S.me.name,d:dt,n:c?c.n:n,v,t:$('#nt').value.trim(),u:now});
+if(!c){c={n,inds:[],ext:true,uses:0,last:0};S.cat.push(c)}
+D.inds.forEach(i=>{const l=i.l.trim();if(l&&!c.inds.some(k=>k.l.toLowerCase()==l.toLowerCase()))c.inds.push({l,u:i.u.trim()})});
+c.uses++;c.last=now;save();D={inds:[],for:null};vIn();msg('Đã lưu.')}
+function renderList(){
+const es=S.entries.filter(e=>e.m==S.me.id&&e.d==dt).sort((a,b)=>a.u-b.u);
+$('#lt').textContent='Đã nhập ngày '+vn(dt)+' ('+es.length+' dòng)';
+$('#list').innerHTML=es.length?es.map(e=>`<div class="it"><b>${esc(e.n)}</b>${find(e.n)&&find(e.n).ext?'<span class="tag">ngoài danh mục</span>':''}<div>${esc(nums(e.v))||'<span class="mu">Không có số liệu</span>'}</div><div class="mu">${esc(e.t)}</div><div class="r" style="margin-top:6px"><button class="b s" onclick="editRow('${e.id}')">Sửa</button><button class="b s" onclick="delRow('${e.id}')">Xóa</button></div></div>`).join(''):'<div class="mu">Chưa có dòng nào cho ngày này.</div>'}
+function delRow(id){S.entries=S.entries.filter(e=>e.id!=id);save();renderList()}
+function editRow(id){const e=S.entries.find(x=>x.id==id);if(!e)return;S.entries=S.entries.filter(x=>x.id!=id);D={inds:e.v.map(i=>({l:i.l,u:i.u,x:i.x})),for:e.n};vIn();$('#nm').value=e.n;$('#nt').value=e.t;nameChg();window.scrollTo(0,0)}
+function copyY(){const ys=addDays(dt,-1),src=S.entries.filter(e=>e.m==S.me.id&&e.d==ys);if(!src.length)return msg('Hôm qua chưa có dòng nào để sao chép.');
+src.forEach(e=>S.entries.push({...e,id:rid(),d:dt,u:Date.now(),v:e.v.map(i=>({...i}))}));save();renderList();msg('Đã sao chép '+src.length+' dòng. Hãy sửa lại số liệu nếu khác.')}
+
+/* ---------- Báo cáo ---------- */
+function vRp(){
+$('#main').innerHTML=`<div class="c np"><div class="r"><div class="g"><label>Loại báo cáo</label><select id="rt" onchange="draw()"><option value="d">Ngày</option><option value="w">Tuần</option><option value="m">Tháng</option></select></div>
+<div class="g"><label>Chọn ngày trong kỳ</label><input id="rd" type="date" value="${dt}" onchange="draw()"></div>
+<div class="g"><label>Phạm vi</label><select id="rs" onchange="draw()"><option value="me">Của tôi</option><option value="all">Cả nhóm (đã nhập file)</option></select></div></div>
+<div class="r" style="margin-top:12px"><button class="b" onclick="window.print()">In / lưu PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
+<div class="c"><div id="out"></div></div>`;draw()}
+function build(){
+const t=$('#rt').value,ref=$('#rd').value||today(),sc=$('#rs').value,[a,b]=range(t,ref);
+const es=S.entries.filter(e=>e.d>=a&&e.d<=b&&(sc=='all'||e.m==S.me.id)).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.u-y.u);
+const title=t=='d'?'BÁO CÁO NGÀY '+vn(ref):t=='w'?'BÁO CÁO TUẦN ('+vn(a)+' – '+vn(b)+')':'BÁO CÁO THÁNG '+ref.slice(5,7)+'/'+ref.slice(0,4);
+const g={};es.forEach(e=>(g[e.n]=g[e.n]||[]).push(e));
+const order=S.cat.map(c=>c.n).concat(Object.keys(g).filter(n=>!find(n)));
+const rows=[];order.filter(n=>g[n]).forEach(n=>{const sm={};g[n].forEach(e=>e.v.forEach(i=>{(sm[i.l]=sm[i.l]||{x:0,u:i.u}).x+=i.x}));rows.push({n,sm,ds:g[n]})});
+return{title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
+function tbl(R){
+if(!R.rows.length)return'<p class="mu">Không có dữ liệu trong kỳ này.</p>';
+return'<table><tr><th>STT</th><th>Nội dung</th><th>Số liệu (cộng dồn)</th><th>Nội dung cụ thể</th></tr>'+R.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.n)}</td><td>${Object.entries(r.sm).map(([l,o])=>esc(l)+': <b>'+(+o.x.toFixed(4))+'</b>'+(o.u?' '+esc(o.u):'')).join('<br>')||'–'}</td><td>${r.ds.map(e=>`<div>${vn(e.d).slice(0,5)}${R.sc=='all'?' ['+esc(mname(e))+']':''}${e.v.length?': '+esc(nums(e.v)):''}${e.t?' – '+esc(e.t):''}</div>`).join('')}</td></tr>`).join('')+'</table>'}
+function draw(){const R=build();$('#out').innerHTML='<h2 style="font-size:17px;text-align:center;margin:4px 0">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center;margin:0 0 10px">Người báo cáo: '+esc(R.who)+'</p>':'')+'<div class="tw">'+tbl(R)+'</div>'}
+function expWord(){const R=build();dl('bao-cao.doc','<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:13pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px;vertical-align:top}</style></head><body><h2 style="text-align:center">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center">Người báo cáo: '+esc(R.who)+'</p>':'')+tbl(R)+'</body></html>','application/msword')}
+function expCsv(){const R=build();let s='\ufeffNội dung;Chỉ tiêu;Tổng;Đơn vị\n';R.rows.forEach(r=>{const k=Object.entries(r.sm);if(!k.length)s+=r.n+';;;\n';k.forEach(([l,o])=>s+=[r.n,l,+o.x.toFixed(4),o.u].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(';')+'\n')});dl('bao-cao.csv',s,'text/csv')}
+
+/* ---------- Danh mục ---------- */
+function vCt(){
+$('#main').innerHTML=`<div class="c"><label>Tên nội dung</label><input id="cn" placeholder="Ví dụ: Kiểm tra nhà trọ">
+<label>Chỉ tiêu và đơn vị (mỗi dòng một chỉ tiêu, dạng: Tên chỉ tiêu | đơn vị)</label><textarea id="ci" placeholder="Đã kiểm tra | cơ sở&#10;Vi phạm | cơ sở"></textarea>
+<div class="r" style="margin-top:10px"><button class="b p" onclick="saveCat()">Lưu vào danh mục</button><button class="b" onclick="E=-1;vCt()">Làm mới form</button></div></div>
+<div class="c"><div class="r"><button class="b" onclick="expCat()">Xuất danh mục (.json)</button><button class="b" onclick="expCatCsv()">Xuất danh mục (Excel CSV)</button><label class="b" style="margin:0;cursor:pointer">Nhập danh mục<input type="file" accept=".json,.csv,.txt" hidden onchange="impCat(this.files);this.value=''"></label></div>
+<div class="mu" style="margin-top:6px">File CSV có 3 cột: Tên nội dung; Chỉ tiêu; Đơn vị. Mỗi dòng một chỉ tiêu.</div></div>
+<div class="c" id="cl"></div>`;
+$('#cl').innerHTML=S.cat.length?S.cat.map((c,i)=>`<div class="it"><b>${esc(c.n)}</b>${c.ext?'<span class="tag">ngoài danh mục</span>':''}<div class="mu">${c.inds.map(k=>esc(k.l)+(k.u?' ('+esc(k.u)+')':'')).join(', ')||'Chưa có chỉ tiêu'}</div><div class="r" style="margin-top:6px"><button class="b s" onclick="editCat(${i})">Sửa</button><button class="b s" onclick="delCat(${i})">Xóa</button></div></div>`).join(''):'<div class="mu">Danh mục đang trống.</div>'}
+function parseInds(t){return t.split('\n').map(x=>x.split('|')).map(a=>({l:(a[0]||'').trim(),u:(a[1]||'').trim()})).filter(i=>i.l)}
+function saveCat(){const n=$('#cn').value.trim();if(!n)return msg('Hãy nhập tên nội dung.');const inds=parseInds($('#ci').value);
+if(E>=0)Object.assign(S.cat[E],{n,inds,ext:false});else{const c=find(n);if(c){c.inds=inds;c.ext=false}else S.cat.push({n,inds,ext:false,uses:0,last:0})}
+E=-1;save();vCt();msg('Đã lưu danh mục.')}
+function editCat(i){E=i;const c=S.cat[i];$('#cn').value=c.n;$('#ci').value=c.inds.map(k=>k.l+' | '+k.u).join('\n');window.scrollTo(0,0)}
+function delCat(i){S.cat.splice(i,1);E=-1;save();vCt()}
+function expCat(){dl('danhmuc_noidung.json',JSON.stringify({type:'catalog',v:1,ver:Date.now(),cat:S.cat.map(c=>({n:c.n,inds:c.inds}))},null,1),'application/json')}
+function expCatCsv(){let s='\ufeffTên nội dung;Chỉ tiêu;Đơn vị\n';S.cat.forEach(c=>{if(!c.inds.length)s+=c.n+';;\n';c.inds.forEach(k=>s+=[c.n,k.l,k.u].join(';')+'\n')});dl('danhmuc_noidung.csv',s,'text/csv')}
+function mergeCat(list){let n=0;list.forEach(x=>{if(!x||!x.n)return;let c=find(x.n);if(!c){c={n:String(x.n).trim(),inds:[],ext:false,uses:0,last:0};S.cat.push(c)}c.ext=false;n++;(x.inds||[]).forEach(k=>{if(k&&k.l&&!c.inds.some(z=>z.l.toLowerCase()==String(k.l).trim().toLowerCase()))c.inds.push({l:String(k.l).trim(),u:String(k.u||'').trim()})})});return n}
+async function impCat(fl){let n=0;for(const f of fl){try{const t=await f.text();let list;
+if(f.name.toLowerCase().endsWith('.json')){const o=JSON.parse(t);if(o.type!='catalog'||!Array.isArray(o.cat))throw 0;list=o.cat}
+else{const m={};t.replace(/^\ufeff/,'').split(/\r?\n/).forEach(r=>{if(!r.trim())return;const sp=r.includes(';')?';':r.includes('\t')?'\t':',';const[a,l,u]=r.split(sp).map(x=>x.replace(/^"|"$/g,'').trim());if(!a||a.toLowerCase().startsWith('tên nội dung'))return;(m[a]=m[a]||{n:a,inds:[]});if(l)m[a].inds.push({l,u:u||''})});list=Object.values(m)}
+n+=mergeCat(list)}catch(e){msg('File “'+f.name+'” không đúng định dạng danh mục.')}}
+save();vCt();if(n)msg('Đã nhập '+n+' mục vào danh mục.')}
+
+/* ---------- Nhóm ---------- */
+let gd=today();
+function vGr(){
+const mb={};S.entries.forEach(e=>{const k=e.m;(mb[k]=mb[k]||{name:mname(e),n:0,last:'',days:{}});mb[k].n++;if(e.d>mb[k].last)mb[k].last=e.d;mb[k].days[e.d]=1});
+const ex=[];EX=[];S.entries.forEach(e=>{if(!find(e.n)&&!EX.some(x=>x.n==e.n))EX.push(e)});
+$('#main').innerHTML=`<div class="c"><b>Gửi dữ liệu của tôi cho trưởng nhóm</b><div class="mu">Xuất toàn bộ báo cáo bạn đã nhập thành một file để gửi qua Zalo hoặc email.</div><div style="margin-top:8px"><button class="b p" onclick="expData()">Xuất dữ liệu của tôi</button></div></div>
+<div class="c"><b>Tổng hợp từ thành viên</b><div class="mu">Chọn một hoặc nhiều file dữ liệu nhận được. Nhập lại cùng một file không bị nhân đôi; bản sửa mới hơn sẽ thay bản cũ.</div>
+<div style="margin-top:8px"><label class="b p" style="display:inline-block;margin:0;cursor:pointer">Nhập file thành viên<input type="file" accept=".json" multiple hidden onchange="impData(this.files);this.value=''"></label></div><div id="ir" class="mu" style="margin-top:8px"></div></div>
+<div class="c"><div class="r"><b class="g">Ai đã nộp</b><input type="date" style="max-width:170px" value="${gd}" onchange="gd=this.value;vGr()"></div><div class="tw" style="margin-top:8px"><table><tr><th>Thành viên</th><th>Số dòng</th><th>Gần nhất</th><th>Ngày ${vn(gd)}</th></tr>${Object.values(mb).map(m=>`<tr><td>${esc(m.name)}</td><td>${m.n}</td><td>${vn(m.last)}</td><td>${m.days[gd]?'<span class="ok">Đã nộp</span>':'<span class="no">Chưa nộp</span>'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">Chưa có dữ liệu.</td></tr>'}</table></div></div>
+<div class="c"><b>Nội dung ngoài danh mục chuẩn</b>${EX.length?EX.map((e,i)=>`<div class="it"><b>${esc(e.n)}</b> <span class="mu">(${e.v.map(k=>esc(k.l)).join(', ')||'không có chỉ tiêu'}; ${esc(mname(e))})</span><div style="margin-top:6px"><button class="b s" onclick="addEx(${i})">Thêm vào danh mục</button></div></div>`).join(''):'<div class="mu">Tất cả nội dung đều nằm trong danh mục chuẩn.</div>'}</div>`}
+function expData(){const mine=S.entries.filter(e=>e.m==S.me.id);if(!mine.length)return msg('Bạn chưa nhập dòng báo cáo nào.');
+const nm=(S.me.name||'thanhvien').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').replace(/\W+/g,'_');
+dl('baocao_'+nm+'_'+today()+'.json',JSON.stringify({type:'data',v:1,member:{id:S.me.id,name:S.me.name},entries:mine}),'application/json')}
+async function impData(fl){let add=0,upd=0,err=[];
+for(const f of fl){try{const o=JSON.parse(await f.text());if(o.type!='data'||!Array.isArray(o.entries))throw'không phải file dữ liệu báo cáo';
+const ok=[];o.entries.forEach((e,i)=>{if(!e||typeof e.id!='string'||!/^\d{4}-\d\d-\d\d$/.test(e.d)||typeof e.n!='string'||!e.n.trim()||!Array.isArray(e.v))throw'dòng '+(i+1)+' sai cấu trúc';
+ok.push({id:e.id,m:String(e.m||''),mn:String(e.mn||''),d:e.d,n:e.n.trim(),v:e.v.filter(k=>k&&k.l&&typeof k.x=='number'&&isFinite(k.x)).map(k=>({l:String(k.l),u:String(k.u||''),x:k.x})),t:String(e.t||''),u:Number(e.u)||0})});
+ok.forEach(e=>{const j=S.entries.findIndex(x=>x.id==e.id);if(j<0){S.entries.push(e);add++}else if(e.u>S.entries[j].u){S.entries[j]=e;upd++}})}
+catch(x){err.push(f.name+': '+(typeof x=='string'?x:'không đọc được file'))}}
+save();vGr();$('#ir').innerHTML='Thêm mới '+add+' dòng, cập nhật '+upd+' dòng.'+(err.length?'<br><span class="no">Bỏ qua file lỗi:<br>'+err.map(esc).join('<br>')+'</span>':'')}
+function addEx(i){const e=EX[i];mergeCat([{n:e.n,inds:e.v.map(k=>({l:k.l,u:k.u}))}]);save();vGr();msg('Đã thêm “'+e.n+'” vào danh mục.')}
+
+load();show('in');
+try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
+</script>
+</body>
+</html>
