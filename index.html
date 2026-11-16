@@ -133,7 +133,7 @@ function vRp(){
 $('#main').innerHTML=`<div class="c np"><div class="r"><div class="g"><label>Loại báo cáo</label><select id="rt" onchange="draw()"><option value="d">Ngày</option><option value="w">Tuần</option><option value="m">Tháng</option></select></div>
 <div class="g"><label>Chọn ngày trong kỳ</label><input id="rd" type="date" value="${dt}" onchange="draw()"></div>
 <div class="g"><label>Phạm vi</label><select id="rs" onchange="draw()"><option value="me">Của tôi</option><option value="all">Cả nhóm (đã nhập file)</option></select></div></div>
-<div class="r" style="margin-top:12px"><button class="b" onclick="window.print()">In / lưu PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
+<div class="r" style="margin-top:12px"><button class="b p" onclick="shareTxt()">Chia sẻ (Zalo…)</button><button class="b" onclick="sharePdf()">Chia sẻ PDF</button><button class="b" onclick="shareFile()">Chia sẻ file Word</button><button class="b" onclick="window.print()">In / lưu PDF</button><button class="b" onclick="expPdf()">Tải PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
 <div class="c"><div id="out"></div></div>`;draw()}
 function build(){
 const t=$('#rt').value,ref=$('#rd').value||today(),sc=$('#rs').value,[a,b]=range(t,ref);
@@ -142,12 +142,49 @@ const title=t=='d'?'BÁO CÁO NGÀY '+vn(ref):t=='w'?'BÁO CÁO TUẦN ('+vn(a)+
 const g={};es.forEach(e=>(g[e.n]=g[e.n]||[]).push(e));
 const order=S.cat.map(c=>c.n).concat(Object.keys(g).filter(n=>!find(n)));
 const rows=[];order.filter(n=>g[n]).forEach(n=>{const sm={};g[n].forEach(e=>e.v.forEach(i=>{(sm[i.l]=sm[i.l]||{x:0,u:i.u}).x+=i.x}));rows.push({n,sm,ds:g[n]})});
-return{title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
+return{t,title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
 function tbl(R){
 if(!R.rows.length)return'<p class="mu">Không có dữ liệu trong kỳ này.</p>';
-return'<table><tr><th>STT</th><th>Nội dung</th><th>Số liệu (cộng dồn)</th><th>Nội dung cụ thể</th></tr>'+R.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.n)}</td><td>${Object.entries(r.sm).map(([l,o])=>esc(l)+': <b>'+(+o.x.toFixed(4))+'</b>'+(o.u?' '+esc(o.u):'')).join('<br>')||'–'}</td><td>${r.ds.map(e=>`<div>${vn(e.d).slice(0,5)}${R.sc=='all'?' ['+esc(mname(e))+']':''}${e.v.length?': '+esc(nums(e.v)):''}${e.t?' – '+esc(e.t):''}</div>`).join('')}</td></tr>`).join('')+'</table>'}
+return'<table><tr><th>STT</th><th>Nội dung</th><th>Số liệu (cộng dồn)</th><th>Nội dung cụ thể</th></tr>'+R.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.n)}</td><td>${Object.entries(r.sm).map(([l,o])=>esc(l)+': <b>'+(+o.x.toFixed(4))+'</b>'+(o.u?' '+esc(o.u):'')).join('<br>')||'–'}</td><td>${r.ds.filter(e=>e.t).map(e=>`<div>${R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+esc(mname(e))+']':'')+': ':(R.sc=='all'?'['+esc(mname(e))+'] ':'')}${esc(e.t)}</div>`).join('')}</td></tr>`).join('')+'</table>'}
 function draw(){const R=build();$('#out').innerHTML='<h2 style="font-size:17px;text-align:center;margin:4px 0">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center;margin:0 0 10px">Người báo cáo: '+esc(R.who)+'</p>':'')+'<div class="tw">'+tbl(R)+'</div>'}
 function expWord(){const R=build();dl('bao-cao.doc','<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:13pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px;vertical-align:top}</style></head><body><h2 style="text-align:center">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center">Người báo cáo: '+esc(R.who)+'</p>':'')+tbl(R)+'</body></html>','application/msword')}
+function pdfPages(R){
+const W=1240,H=1754,M=90,FS=26,LH=36,P=10,FONT='"Times New Roman",Times,serif',cw=[70,250,340,400];
+const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.strokeStyle='#000';g.lineWidth=1.5;
+const pages=[];let y;
+const newPage=()=>{g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#000';y=M};
+const flush=()=>pages.push(cv.toDataURL('image/jpeg',0.92));
+function wrap(t,w){g.font=FS+'px '+FONT;const out=[];String(t).split('\n').forEach(par=>{let line='';par.split(' ').forEach(wd=>{const tt=line?line+' '+wd:wd;if(g.measureText(tt).width>w&&line){out.push(line);line=wd}else line=tt});out.push(line)});return out}
+function chunk(cells,a,b,bold,fill){const h=(b-a)*LH+2*P;let x=M;cells.forEach((c,i)=>{if(fill){g.fillStyle='#e3f1ee';g.fillRect(x,y,cw[i],h);g.fillStyle='#000'}g.strokeRect(x,y,cw[i],h);g.font=(bold?'bold ':'')+FS+'px '+FONT;c.slice(a,b).forEach((l,k)=>g.fillText(l,x+P,y+P+k*LH+FS));x+=cw[i]});y+=h}
+function row(cells,bold,fill){const L=Math.max(...cells.map(c=>c.length));let a=0;while(a<L){const room=Math.floor((H-M-y-2*P)/LH);if(room<1){flush();newPage();continue}const b=Math.min(L,a+room);chunk(cells,a,b,bold,fill);a=b}}
+newPage();g.textAlign='center';g.font='bold 34px '+FONT;g.fillText(R.title,W/2,y+34);y+=56;
+if(R.who){g.font=FS+'px '+FONT;g.fillText('Người báo cáo: '+R.who,W/2,y+FS);y+=50}
+g.textAlign='left';
+row([['STT'],['Nội dung'],['Số liệu (cộng dồn)'],['Nội dung cụ thể']],true,true);
+R.rows.forEach((r,i)=>{
+const k=Object.entries(r.sm).map(([l,o])=>l+': '+(+o.x.toFixed(4))+(o.u?' '+o.u:'')).join('\n');
+const nt=r.ds.filter(e=>e.t).map(e=>(R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+mname(e)+']':'')+': ':(R.sc=='all'?'['+mname(e)+'] ':''))+e.t).join('\n');
+row([wrap(i+1,cw[0]-2*P),wrap(r.n,cw[1]-2*P),wrap(k,cw[2]-2*P),wrap(nt,cw[3]-2*P)],false,false)});
+if(!R.rows.length){g.font=FS+'px '+FONT;g.fillText('Không có dữ liệu trong kỳ này.',M,y+FS+10)}
+flush();return pages}
+function makePdf(jp){const enc=new TextEncoder(),parts=[],off=[];let len=0;
+const add=x=>{const b=typeof x=='string'?enc.encode(x):x;parts.push(b);len+=b.length};
+const obj=(n,fn)=>{off[n]=len;add(n+' 0 obj\n');fn();add('\nendobj\n')};
+const N=jp.length;add('%PDF-1.4\n');
+obj(1,()=>add('<</Type/Catalog/Pages 2 0 R>>'));
+obj(2,()=>add('<</Type/Pages/Count '+N+'/Kids['+jp.map((_,i)=>(3+3*i)+' 0 R').join(' ')+']>>'));
+jp.forEach((d,i)=>{const bin=Uint8Array.from(atob(d.split(',')[1]),c=>c.charCodeAt(0)),p=3+3*i,cs='q 595 0 0 842 0 0 cm /I Do Q';
+obj(p,()=>add('<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</XObject<</I '+(p+2)+' 0 R>>>>/Contents '+(p+1)+' 0 R>>'));
+obj(p+1,()=>add('<</Length '+cs.length+'>>\nstream\n'+cs+'\nendstream'));
+obj(p+2,()=>{add('<</Type/XObject/Subtype/Image/Width 1240/Height 1754/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length '+bin.length+'>>\nstream\n');add(bin);add('\nendstream')})});
+const total=3+3*N,xr=len;add('xref\n0 '+total+'\n0000000000 65535 f \n');
+for(let n=1;n<total;n++)add(String(off[n]).padStart(10,'0')+' 00000 n \n');
+add('trailer\n<</Size '+total+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF');
+return new Blob(parts,{type:'application/pdf'})}
+function expPdf(){dl('bao-cao.pdf',makePdf(pdfPages(build())),'application/pdf')}
+async function sharePdf(){const R=build(),f=new File([makePdf(pdfPages(R))],'bao-cao.pdf',{type:'application/pdf'});
+try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});return}}catch(e){if(e&&e.name=='AbortError')return}
+msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải PDF về, hãy gửi file từ máy.');expPdf()}
 function expCsv(){const R=build();let s='\ufeffNội dung;Chỉ tiêu;Tổng;Đơn vị\n';R.rows.forEach(r=>{const k=Object.entries(r.sm);if(!k.length)s+=r.n+';;;\n';k.forEach(([l,o])=>s+=[r.n,l,+o.x.toFixed(4),o.u].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(';')+'\n')});dl('bao-cao.csv',s,'text/csv')}
 
 /* ---------- Danh mục ---------- */

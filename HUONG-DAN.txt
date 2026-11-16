@@ -2,4 +2,4 @@
 Mở địa chỉ đó trên điện thoại:
 - Android (Chrome): menu ⋮ > Cài đặt ứng dụng (hoặc Thêm vào màn hình chính).
 - iPhone (Safari): nút Chia sẻ > Thêm vào Màn hình chính.
-Giữ nguyên tên và vị trí các file. Khi sửa app, đổi 'bc-v1' trong sw.js thành bc-v2 để máy cập nhật.
+Giữ nguyên tên và vị trí các file. Khi sửa app, đổi 'bc-v3' trong sw.js thành bc-v4 để máy cập nhật.
