@@ -58,6 +58,7 @@ th{background:var(--hl)}
 <button id="t-rp" onclick="show('rp')">Báo cáo</button>
 <button id="t-ct" onclick="show('ct')">Danh mục</button>
 <button id="t-gr" onclick="show('gr')">Nhóm</button>
+<button id="t-kh" onclick="show('kh')">Kho</button>
 </nav>
 <div id="main"></div>
 </div>
@@ -79,14 +80,14 @@ function seed(){return{me:{id:rid(),name:''},entries:[],cat:[
 {n:'Kiểm tra nhà trọ',inds:[{l:'Đã kiểm tra',u:'cơ sở'},{l:'Đạt',u:'cơ sở'},{l:'Vi phạm',u:'cơ sở'}],ext:false,uses:0,last:0},
 {n:'Tuyên truyền',inds:[{l:'Số buổi',u:'buổi'},{l:'Số người dự',u:'người'}],ext:false,uses:0,last:0},
 {n:'Tuần tra',inds:[{l:'Số ca',u:'ca'},{l:'Phát hiện vụ việc',u:'vụ'}],ext:false,uses:0,last:0}]}}
-function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S||!S.cat)S=seed()}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S||!S.cat)S=seed();S.kho=S.kho||[];S.rcv=S.rcv||[]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function msg(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(msg.t);msg.t=setTimeout(()=>e.style.display='none',3500)}
 const find=n=>S.cat.find(c=>c.n.toLowerCase()==String(n).trim().toLowerCase());
 const mname=e=>e.m==S.me.id?(S.me.name||'Tôi'):(e.mn||'Không tên');
 const nums=v=>v.map(i=>i.l+': '+i.x+(i.u?' '+i.u:'')).join(' · ');
 function dl(name,text,mime){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();msg('Đã tạo file '+name)}catch(e){msg('Không tải được file trong khung xem này. Hãy mở app ở tab riêng.')}}
-function show(t){tab=t;['in','rp','ct','gr'].forEach(k=>$('#t-'+k).classList.toggle('on',k==t));({in:vIn,rp:vRp,ct:vCt,gr:vGr})[t]()}
+function show(t){tab=t;['in','rp','ct','gr','kh'].forEach(k=>$('#t-'+k).classList.toggle('on',k==t));({in:vIn,rp:vRp,ct:vCt,gr:vGr,kh:vKh})[t]()}
 
 /* ---------- Nhập báo cáo ---------- */
 function vIn(){
@@ -133,7 +134,7 @@ function vRp(){
 $('#main').innerHTML=`<div class="c np"><div class="r"><div class="g"><label>Loại báo cáo</label><select id="rt" onchange="draw()"><option value="d">Ngày</option><option value="w">Tuần</option><option value="m">Tháng</option></select></div>
 <div class="g"><label>Chọn ngày trong kỳ</label><input id="rd" type="date" value="${dt}" onchange="draw()"></div>
 <div class="g"><label>Phạm vi</label><select id="rs" onchange="draw()"><option value="me">Của tôi</option><option value="all">Cả nhóm (đã nhập file)</option></select></div></div>
-<div class="r" style="margin-top:12px"><button class="b p" onclick="shareTxt()">Chia sẻ (Zalo…)</button><button class="b" onclick="sharePdf()">Chia sẻ PDF</button><button class="b" onclick="shareFile()">Chia sẻ file Word</button><button class="b" onclick="window.print()">In / lưu PDF</button><button class="b" onclick="expPdf()">Tải PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
+<div class="r" style="margin-top:12px"><button class="b p" onclick="shareTxt()">Chia sẻ (Zalo…)</button><button class="b" onclick="sharePdf()">Chia sẻ PDF</button><button class="b" onclick="shareFile()">Chia sẻ file Word</button><button class="b" onclick="kho(build(),'In');window.print()">In / lưu PDF</button><button class="b" onclick="expPdf()">Tải PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
 <div class="c"><div id="out"></div></div>`;draw()}
 function build(){
 const t=$('#rt').value,ref=$('#rd').value||today(),sc=$('#rs').value,[a,b]=range(t,ref);
@@ -142,12 +143,15 @@ const title=t=='d'?'BÁO CÁO NGÀY '+vn(ref):t=='w'?'BÁO CÁO TUẦN ('+vn(a)+
 const g={};es.forEach(e=>(g[e.n]=g[e.n]||[]).push(e));
 const order=S.cat.map(c=>c.n).concat(Object.keys(g).filter(n=>!find(n)));
 const rows=[];order.filter(n=>g[n]).forEach(n=>{const sm={};g[n].forEach(e=>e.v.forEach(i=>{(sm[i.l]=sm[i.l]||{x:0,u:i.u}).x+=i.x}));rows.push({n,sm,ds:g[n]})});
-return{t,title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
+return{t,a,b,ref,title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
 function tbl(R){
 if(!R.rows.length)return'<p class="mu">Không có dữ liệu trong kỳ này.</p>';
 return'<table><tr><th>STT</th><th>Nội dung</th><th>Số liệu (cộng dồn)</th><th>Nội dung cụ thể</th></tr>'+R.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.n)}</td><td>${Object.entries(r.sm).map(([l,o])=>esc(l)+': <b>'+(+o.x.toFixed(4))+'</b>'+(o.u?' '+esc(o.u):'')).join('<br>')||'–'}</td><td>${r.ds.filter(e=>e.t).map(e=>`<div>${R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+esc(mname(e))+']':'')+': ':(R.sc=='all'?'['+esc(mname(e))+'] ':'')}${esc(e.t)}</div>`).join('')}</td></tr>`).join('')+'</table>'}
 function draw(){const R=build();$('#out').innerHTML='<h2 style="font-size:17px;text-align:center;margin:4px 0">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center;margin:0 0 10px">Người báo cáo: '+esc(R.who)+'</p>':'')+'<div class="tw">'+tbl(R)+'</div>'}
-function expWord(){const R=build();dl('bao-cao.doc','<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:13pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px;vertical-align:top}</style></head><body><h2 style="text-align:center">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center">Người báo cáo: '+esc(R.who)+'</p>':'')+tbl(R)+'</body></html>','application/msword')}
+function wordHtml(R){return '<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:13pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px;vertical-align:top}</style></head><body><h2 style="text-align:center">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center">Người báo cáo: '+esc(R.who)+'</p>':'')+tbl(R)+'</body></html>'}
+function repText(R){let s=R.title+(R.who?'\nNgười báo cáo: '+R.who:'')+'\n';if(!R.rows.length)return s+'\nKhông có dữ liệu.';
+R.rows.forEach((r,i)=>{const k=Object.entries(r.sm).map(([l,o])=>l+': '+(+o.x.toFixed(4))+(o.u?' '+o.u:'')).join('; ');s+='\n'+(i+1)+'. '+r.n+(k?'\n   '+k:'');
+r.ds.filter(e=>e.t).forEach(e=>{s+='\n   - '+(R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+mname(e)+']':'')+': ':'')+e.t})});return s}
 function pdfPages(R){
 const W=1240,H=1754,M=90,FS=26,LH=36,P=10,FONT='"Times New Roman",Times,serif',cw=[70,250,340,400];
 const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.strokeStyle='#000';g.lineWidth=1.5;
@@ -181,11 +185,22 @@ const total=3+3*N,xr=len;add('xref\n0 '+total+'\n0000000000 65535 f \n');
 for(let n=1;n<total;n++)add(String(off[n]).padStart(10,'0')+' 00000 n \n');
 add('trailer\n<</Size '+total+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF');
 return new Blob(parts,{type:'application/pdf'})}
-function expPdf(){dl('bao-cao.pdf',makePdf(pdfPages(build())),'application/pdf')}
-async function sharePdf(){const R=build(),f=new File([makePdf(pdfPages(R))],'bao-cao.pdf',{type:'application/pdf'});
-try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});return}}catch(e){if(e&&e.name=='AbortError')return}
-msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải PDF về, hãy gửi file từ máy.');expPdf()}
-function expCsv(){const R=build();let s='\ufeffNội dung;Chỉ tiêu;Tổng;Đơn vị\n';R.rows.forEach(r=>{const k=Object.entries(r.sm);if(!k.length)s+=r.n+';;;\n';k.forEach(([l,o])=>s+=[r.n,l,+o.x.toFixed(4),o.u].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(';')+'\n')});dl('bao-cao.csv',s,'text/csv')}
+const slug=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^A-Za-z0-9]+/g,'');
+function fname(R,ext){const ty={d:'Ngay',w:'Tuan',m:'Thang'}[R.t],wh=R.t=='d'?R.a:R.t=='w'?R.a+'_den_'+R.b:R.a.slice(0,7);return['BaoCao',ty,R.sc=='all'?'CaNhom':(slug(R.who)||'KhongTen'),wh].join('_')+'.'+ext}
+function kho(R,act){try{if(!R.rows.length)return;const key=[R.t,R.a,R.b,R.sc,R.sc=='me'?S.me.id:'all'].join('|'),now=Date.now();
+let it=S.kho.find(x=>x.k==key);if(!it){it={id:rid(),k:key,acts:[]};S.kho.unshift(it)}
+it.r=JSON.parse(JSON.stringify(R));it.u=now;it.acts=it.acts.filter(a=>a.n!=act).concat({n:act,t:now});if(S.kho.length>200)S.kho.length=200;save()}catch(e){}}
+function expWord(R){R=R||build();dl(fname(R,'doc'),wordHtml(R),'application/msword');kho(R,'Tải Word')}
+async function shareTxt(R){R=R||build();const text=repText(R);try{if(navigator.share){await navigator.share({title:R.title,text});kho(R,'Chia sẻ văn bản');return}}catch(e){if(e&&e.name=='AbortError')return}
+try{await navigator.clipboard.writeText(text);kho(R,'Sao chép văn bản');msg('Máy này chưa có hộp chia sẻ. Đã sao chép nội dung, hãy dán vào Zalo.')}catch(e){msg('Không chia sẻ được. Hãy dùng nút Tải PDF hoặc Tải Word.')}}
+async function shareFile(R){R=R||build();const f=new File([wordHtml(R)],fname(R,'doc'),{type:'application/msword'});
+try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});kho(R,'Chia sẻ Word');return}}catch(e){if(e&&e.name=='AbortError')return}
+msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải file về, hãy gửi file từ máy.');expWord(R)}
+function expPdf(R){R=R||build();dl(fname(R,'pdf'),makePdf(pdfPages(R)),'application/pdf');kho(R,'Tải PDF')}
+async function sharePdf(R){R=R||build();const f=new File([makePdf(pdfPages(R))],fname(R,'pdf'),{type:'application/pdf'});
+try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});kho(R,'Chia sẻ PDF');return}}catch(e){if(e&&e.name=='AbortError')return}
+msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải PDF về, hãy gửi file từ máy.');expPdf(R)}
+function expCsv(R){R=R||build();let s='\ufeffNội dung;Chỉ tiêu;Tổng;Đơn vị\n';R.rows.forEach(r=>{const k=Object.entries(r.sm);if(!k.length)s+=r.n+';;;\n';k.forEach(([l,o])=>s+=[r.n,l,+o.x.toFixed(4),o.u].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(';')+'\n')});dl(fname(R,'csv'),s,'text/csv');kho(R,'Tải Excel')}
 
 /* ---------- Danh mục ---------- */
 function vCt(){
@@ -228,10 +243,23 @@ async function impData(fl){let add=0,upd=0,err=[];
 for(const f of fl){try{const o=JSON.parse(await f.text());if(o.type!='data'||!Array.isArray(o.entries))throw'không phải file dữ liệu báo cáo';
 const ok=[];o.entries.forEach((e,i)=>{if(!e||typeof e.id!='string'||!/^\d{4}-\d\d-\d\d$/.test(e.d)||typeof e.n!='string'||!e.n.trim()||!Array.isArray(e.v))throw'dòng '+(i+1)+' sai cấu trúc';
 ok.push({id:e.id,m:String(e.m||''),mn:String(e.mn||''),d:e.d,n:e.n.trim(),v:e.v.filter(k=>k&&k.l&&typeof k.x=='number'&&isFinite(k.x)).map(k=>({l:String(k.l),u:String(k.u||''),x:k.x})),t:String(e.t||''),u:Number(e.u)||0})});
-ok.forEach(e=>{const j=S.entries.findIndex(x=>x.id==e.id);if(j<0){S.entries.push(e);add++}else if(e.u>S.entries[j].u){S.entries[j]=e;upd++}})}
+let ca=0,cu=0;ok.forEach(e=>{const j=S.entries.findIndex(x=>x.id==e.id);if(j<0){S.entries.push(e);add++;ca++}else if(e.u>S.entries[j].u){S.entries[j]=e;upd++;cu++}});const ds=ok.map(e=>e.d).sort();S.rcv.unshift({id:rid(),t:Date.now(),f:f.name,mn:String((o.member&&o.member.name)||'Không tên'),n:ok.length,a:ca,u:cu,d1:ds[0]||'',d2:ds[ds.length-1]||''})}
 catch(x){err.push(f.name+': '+(typeof x=='string'?x:'không đọc được file'))}}
-save();vGr();$('#ir').innerHTML='Thêm mới '+add+' dòng, cập nhật '+upd+' dòng.'+(err.length?'<br><span class="no">Bỏ qua file lỗi:<br>'+err.map(esc).join('<br>')+'</span>':'')}
+save();vGr();$('#ir').innerHTML='Thêm mới '+add+' dòng, cập nhật '+upd+' dòng. Đã ghi vào Kho.'+(err.length?'<br><span class="no">Bỏ qua file lỗi:<br>'+err.map(esc).join('<br>')+'</span>':'')}
 function addEx(i){const e=EX[i];mergeCat([{n:e.n,inds:e.v.map(k=>({l:k.l,u:k.u}))}]);save();vGr();msg('Đã thêm “'+e.n+'” vào danh mục.')}
+
+/* ---------- Kho ---------- */
+let KF='all';const TL={d:'Ngày',w:'Tuần',m:'Tháng'};
+const tm=ts=>{const d=new Date(ts);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+' '+pad(d.getHours())+':'+pad(d.getMinutes())};
+function vKh(){const it=[];
+if(KF!='rcv')S.kho.forEach((x,i)=>{if(KF=='all'||x.r.t==KF)it.push({u:x.u,h:`<div class="c"><div class="r"><b class="g">${esc(x.r.title)}</b><span class="tag" style="color:var(--ac);border-color:var(--ac)">${TL[x.r.t]}</span></div><div class="mu">${x.r.sc=='all'?'Cả nhóm':'Người báo cáo: '+esc(x.r.who||'—')} · cập nhật ${tm(x.u)}</div><div class="mu">${x.acts.map(a=>esc(a.n)+' ('+tm(a.t)+')').join(' · ')}</div><div class="r" style="margin-top:8px"><button class="b s" onclick="togV(${i})">Xem</button><button class="b s" onclick="sharePdf(S.kho[${i}].r)">Chia sẻ PDF</button><button class="b s" onclick="shareTxt(S.kho[${i}].r)">Chia sẻ văn bản</button><button class="b s" onclick="expPdf(S.kho[${i}].r)">Tải PDF</button><button class="b s" onclick="expWord(S.kho[${i}].r)">Tải Word</button><button class="b s" onclick="delKho(${i})">Xóa</button></div><div id="kv${i}" class="tw"></div></div>`})});
+if(KF=='all'||KF=='rcv')S.rcv.forEach((x,i)=>it.push({u:x.t,h:`<div class="c"><div class="r"><b class="g">Nhận từ ${esc(x.mn)}</b><span class="tag" style="color:var(--ac);border-color:var(--ac)">Nhận</span></div><div class="mu">File ${esc(x.f)} · ${x.n} dòng (${x.a} mới, ${x.u} cập nhật) · ngày ${x.d1?vn(x.d1)+' – '+vn(x.d2):'—'}</div><div class="mu">Nhận lúc ${tm(x.t)}</div><div class="r" style="margin-top:8px"><button class="b s" onclick="delRcv(${i})">Xóa ghi chép</button></div></div>`}));
+it.sort((a,b)=>b.u-a.u);
+$('#main').innerHTML=`<div class="c"><div class="r"><div class="g"><label>Lọc</label><select onchange="KF=this.value;vKh()">${[['all','Tất cả'],['d','Báo cáo ngày'],['w','Báo cáo tuần'],['m','Báo cáo tháng'],['rcv','Nhận từ nhóm']].map(o=>`<option value="${o[0]}"${KF==o[0]?' selected':''}>${o[1]}</option>`).join('')}</select></div><button class="b s" onclick="clrKho()">Xóa toàn bộ kho</button></div><div class="mu" style="margin-top:6px">Báo cáo tự được lưu khi bạn tải, in hoặc chia sẻ. File dữ liệu nhận từ thành viên được ghi lại khi nhập.</div></div>`+(it.map(x=>x.h).join('')||'<div class="c mu">Kho đang trống.</div>')}
+function togV(i){const e=$('#kv'+i);e.innerHTML=e.innerHTML?'':'<div style="margin-top:8px">'+tbl(S.kho[i].r)+'</div>'}
+function delKho(i){S.kho.splice(i,1);save();vKh()}
+function delRcv(i){S.rcv.splice(i,1);save();vKh()}
+function clrKho(){if(confirm('Xóa toàn bộ báo cáo trong kho? Dữ liệu nhập hằng ngày không bị xóa.')){S.kho=[];S.rcv=[];save();vKh()}}
 
 load();show('in');
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
