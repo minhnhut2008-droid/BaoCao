@@ -1,5 +1,6 @@
-Đưa thư mục này lên một địa chỉ https (GitHub Pages, Cloudflare Pages, Netlify...).
+Đưa TOÀN BỘ các file trong thư mục này lên https (GitHub Pages, Cloudflare Pages, Netlify...), kể cả font-regular.ttf và font-bold.ttf (cần cho PDF chọn được chữ).
 Mở địa chỉ đó trên điện thoại:
 - Android (Chrome): menu ⋮ > Cài đặt ứng dụng (hoặc Thêm vào màn hình chính).
 - iPhone (Safari): nút Chia sẻ > Thêm vào Màn hình chính.
-Giữ nguyên tên và vị trí các file. Khi sửa app, đổi 'bc-v4' trong sw.js thành bc-v5 để máy cập nhật.
+Giữ nguyên tên và vị trí các file. Sau khi cập nhật, mở app 2 lần và kiểm tra dòng 'Phiên bản 5' ở đầu trang.
+Khi sửa app về sau, đổi 'bc-v5' trong sw.js thành bc-v6.

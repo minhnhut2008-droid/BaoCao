@@ -52,7 +52,7 @@ th{background:var(--hl)}
 <body>
 <div class="w">
 <h1>Báo cáo ngày – tuần – tháng</h1>
-<div class="mu np">Bản chạy thử. Dữ liệu lưu ngay trên thiết bị này.</div>
+<div class="mu np">Phiên bản 5 (20/11/2026). Dữ liệu lưu ngay trên thiết bị này.</div>
 <nav>
 <button id="t-in" onclick="show('in')">Nhập báo cáo</button>
 <button id="t-rp" onclick="show('rp')">Báo cáo</button>
@@ -134,7 +134,7 @@ function vRp(){
 $('#main').innerHTML=`<div class="c np"><div class="r"><div class="g"><label>Loại báo cáo</label><select id="rt" onchange="draw()"><option value="d">Ngày</option><option value="w">Tuần</option><option value="m">Tháng</option></select></div>
 <div class="g"><label>Chọn ngày trong kỳ</label><input id="rd" type="date" value="${dt}" onchange="draw()"></div>
 <div class="g"><label>Phạm vi</label><select id="rs" onchange="draw()"><option value="me">Của tôi</option><option value="all">Cả nhóm (đã nhập file)</option></select></div></div>
-<div class="r" style="margin-top:12px"><button class="b p" onclick="shareTxt()">Chia sẻ (Zalo…)</button><button class="b" onclick="sharePdf()">Chia sẻ PDF</button><button class="b" onclick="shareFile()">Chia sẻ file Word</button><button class="b" onclick="kho(build(),'In');window.print()">In / lưu PDF</button><button class="b" onclick="expPdf()">Tải PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div></div>
+<div class="r" style="margin-top:12px"><button class="b p" onclick="shareTxt()">Chia sẻ (Zalo…)</button><button class="b" onclick="sharePdf()">Chia sẻ PDF</button><button class="b" onclick="shareFile()">Chia sẻ file Word</button><button class="b" onclick="kho(build(),'In');window.print()">In / lưu PDF</button><button class="b" onclick="expPdf()">Tải PDF</button><button class="b" onclick="expWord()">Xuất Word</button><button class="b" onclick="expCsv()">Xuất Excel (CSV)</button></div><div class="mu" id="fnm" style="margin-top:8px;word-break:break-all"></div></div>
 <div class="c"><div id="out"></div></div>`;draw()}
 function build(){
 const t=$('#rt').value,ref=$('#rd').value||today(),sc=$('#rs').value,[a,b]=range(t,ref);
@@ -147,8 +147,7 @@ return{t,a,b,ref,title,rows,sc,who:sc=='me'?(S.me.name||''):'Cả nhóm'}}
 function tbl(R){
 if(!R.rows.length)return'<p class="mu">Không có dữ liệu trong kỳ này.</p>';
 return'<table><tr><th>STT</th><th>Nội dung</th><th>Số liệu (cộng dồn)</th><th>Nội dung cụ thể</th></tr>'+R.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.n)}</td><td>${Object.entries(r.sm).map(([l,o])=>esc(l)+': <b>'+(+o.x.toFixed(4))+'</b>'+(o.u?' '+esc(o.u):'')).join('<br>')||'–'}</td><td>${r.ds.filter(e=>e.t).map(e=>`<div>${R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+esc(mname(e))+']':'')+': ':(R.sc=='all'?'['+esc(mname(e))+'] ':'')}${esc(e.t)}</div>`).join('')}</td></tr>`).join('')+'</table>'}
-function draw(){const R=build();$('#out').innerHTML='<h2 style="font-size:17px;text-align:center;margin:4px 0">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center;margin:0 0 10px">Người báo cáo: '+esc(R.who)+'</p>':'')+'<div class="tw">'+tbl(R)+'</div>'}
-function wordHtml(R){return '<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:13pt}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px;vertical-align:top}</style></head><body><h2 style="text-align:center">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center">Người báo cáo: '+esc(R.who)+'</p>':'')+tbl(R)+'</body></html>'}
+function draw(){const R=build();const fe=$('#fnm');if(fe)fe.textContent='Tên file sẽ lưu: '+fname(R,'pdf').replace(/\.pdf$/,'')+'.pdf / .docx / .csv';$('#out').innerHTML='<h2 style="font-size:17px;text-align:center;margin:4px 0">'+esc(R.title)+'</h2>'+(R.who?'<p style="text-align:center;margin:0 0 10px">Người báo cáo: '+esc(R.who)+'</p>':'')+'<div class="tw">'+tbl(R)+'</div>'}
 function repText(R){let s=R.title+(R.who?'\nNgười báo cáo: '+R.who:'')+'\n';if(!R.rows.length)return s+'\nKhông có dữ liệu.';
 R.rows.forEach((r,i)=>{const k=Object.entries(r.sm).map(([l,o])=>l+': '+(+o.x.toFixed(4))+(o.u?' '+o.u:'')).join('; ');s+='\n'+(i+1)+'. '+r.n+(k?'\n   '+k:'');
 r.ds.filter(e=>e.t).forEach(e=>{s+='\n   - '+(R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+mname(e)+']':'')+': ':'')+e.t})});return s}
@@ -190,14 +189,94 @@ function fname(R,ext){const ty={d:'Ngay',w:'Tuan',m:'Thang'}[R.t],wh=R.t=='d'?R.
 function kho(R,act){try{if(!R.rows.length)return;const key=[R.t,R.a,R.b,R.sc,R.sc=='me'?S.me.id:'all'].join('|'),now=Date.now();
 let it=S.kho.find(x=>x.k==key);if(!it){it={id:rid(),k:key,acts:[]};S.kho.unshift(it)}
 it.r=JSON.parse(JSON.stringify(R));it.u=now;it.acts=it.acts.filter(a=>a.n!=act).concat({n:act,t:now});if(S.kho.length>200)S.kho.length=200;save()}catch(e){}}
-function expWord(R){R=R||build();dl(fname(R,'doc'),wordHtml(R),'application/msword');kho(R,'Tải Word')}
 async function shareTxt(R){R=R||build();const text=repText(R);try{if(navigator.share){await navigator.share({title:R.title,text});kho(R,'Chia sẻ văn bản');return}}catch(e){if(e&&e.name=='AbortError')return}
 try{await navigator.clipboard.writeText(text);kho(R,'Sao chép văn bản');msg('Máy này chưa có hộp chia sẻ. Đã sao chép nội dung, hãy dán vào Zalo.')}catch(e){msg('Không chia sẻ được. Hãy dùng nút Tải PDF hoặc Tải Word.')}}
-async function shareFile(R){R=R||build();const f=new File([wordHtml(R)],fname(R,'doc'),{type:'application/msword'});
+function parseTTF(buf){const v=new DataView(buf),n=v.getUint16(4),T={};
+for(let i=0;i<n;i++){const o=12+i*16;T[String.fromCharCode(v.getUint8(o),v.getUint8(o+1),v.getUint8(o+2),v.getUint8(o+3))]=v.getUint32(o+8)}
+const hd=T.head,hh=T.hhea,hm=T.hmtx,upem=v.getUint16(hd+18),nh=v.getUint16(hh+34),adv=g=>v.getUint16(hm+4*Math.min(g,nh-1));
+const cm=T.cmap,nt=v.getUint16(cm+2);let sub=-1;for(let i=0;i<nt;i++){const o=cm+4+i*8;if(v.getUint16(o)==3&&v.getUint16(o+2)==1)sub=cm+v.getUint32(o+4)}
+if(sub<0)throw new Error('cmap');
+const map=new Map(),sc=v.getUint16(sub+6)/2,en=sub+14,st=en+sc*2+2,dl=st+sc*2,ro=dl+sc*2;
+for(let s=0;s<sc;s++){const e=v.getUint16(en+s*2),b=v.getUint16(st+s*2),d=v.getInt16(dl+s*2),r=v.getUint16(ro+s*2);
+for(let c=b;c<=e&&c<0xFFFF;c++){let g;if(r==0)g=(c+d)&0xFFFF;else{g=v.getUint16(ro+s*2+r+(c-b)*2);if(g)g=(g+d)&0xFFFF}if(g)map.set(c,g)}}
+return{data:new Uint8Array(buf),upem,adv,map,asc:v.getInt16(hh+4),desc:v.getInt16(hh+6),bb:[v.getInt16(hd+36),v.getInt16(hd+38),v.getInt16(hd+40),v.getInt16(hd+42)]}}
+let FP=null;
+function loadFonts(){return FP||(FP=Promise.all(['font-regular.ttf','font-bold.ttf'].map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error(u);return r.arrayBuffer()}))).then(a=>a.map(parseTTF)).catch(e=>{FP=null;throw e}))}
+function buildPdf(pages,fs,used){const enc=new TextEncoder(),parts=[],off=[];let len=0;
+const add=x=>{const b=typeof x=='string'?enc.encode(x):x;parts.push(b);len+=b.length};
+const obj=(n,fn)=>{off[n]=len;add(n+' 0 obj\n');fn();add('\nendobj\n')};
+const hx4=n=>n.toString(16).padStart(4,'0'),N=pages.length;
+add('%PDF-1.5\n');
+obj(1,()=>add('<</Type/Catalog/Pages 2 0 R>>'));
+obj(2,()=>add('<</Type/Pages/Count '+N+'/Kids['+pages.map((_,i)=>(13+2*i)+' 0 R').join(' ')+']>>'));
+fs.forEach((f,fi)=>{const o=3+fi*5,nm='AAAAAA+DejaVuSans'+(fi?'Bold':''),u=used[fi],k=v=>Math.round(v*1000/f.upem);
+obj(o,()=>add('<</Type/Font/Subtype/Type0/BaseFont/'+nm+'/Encoding/Identity-H/DescendantFonts['+(o+1)+' 0 R]/ToUnicode '+(o+4)+' 0 R>>'));
+obj(o+1,()=>add('<</Type/Font/Subtype/CIDFontType2/BaseFont/'+nm+'/CIDSystemInfo<</Registry(Adobe)/Ordering(Identity)/Supplement 0>>/FontDescriptor '+(o+2)+' 0 R/DW 1000/W['+[...u.keys()].map(g=>g+'['+k(f.adv(g))+']').join(' ')+']/CIDToGIDMap/Identity>>'));
+obj(o+2,()=>add('<</Type/FontDescriptor/FontName/'+nm+'/Flags 32/FontBBox['+f.bb.map(k).join(' ')+']/ItalicAngle 0/Ascent '+k(f.asc)+'/Descent '+k(f.desc)+'/CapHeight '+Math.round(k(f.asc)*0.7)+'/StemV 80/FontFile2 '+(o+3)+' 0 R>>'));
+obj(o+3,()=>{add('<</Length '+f.data.length+'/Length1 '+f.data.length+'>>\nstream\n');add(f.data);add('\nendstream')});
+obj(o+4,()=>{let c='/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo<</Registry(Adobe)/Ordering(UCS)/Supplement 0>> def\n/CMapName/Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n';
+const e=[...u.entries()];for(let i=0;i<e.length;i+=100){const ch=e.slice(i,i+100);c+=ch.length+' beginbfchar\n'+ch.map(([g,cp])=>'<'+hx4(g)+'> <'+hx4(cp)+'>').join('\n')+'\nendbfchar\n'}
+c+='endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend';add('<</Length '+enc.encode(c).length+'>>\nstream\n'+c+'\nendstream')})});
+pages.forEach((cs,i)=>{const p=13+2*i;
+obj(p,()=>add('<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 3 0 R/F2 8 0 R>>>>/Contents '+(p+1)+' 0 R>>'));
+obj(p+1,()=>add('<</Length '+cs.length+'>>\nstream\n'+cs+'\nendstream'))});
+const total=13+2*N,xr=len;add('xref\n0 '+total+'\n0000000000 65535 f \n');
+for(let n=1;n<total;n++)add(String(off[n]).padStart(10,'0')+' 00000 n \n');
+add('trailer\n<</Size '+total+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF');
+return new Blob(parts,{type:'application/pdf'})}
+async function pdfText(R){
+const FT=await loadFonts(),used=[new Map(),new Map()],pages=[];
+const PW=595,PH=842,M=40,SZ=10.5,LH=14.5,P=4,cw=[28,115,140,232],f2=n=>n.toFixed(2);
+let cs='',y=0;
+const gl=(f,cp)=>{const g=f.map.get(cp);return g?[g,cp]:[f.map.get(63)||0,63]};
+const hx=(fi,s)=>{let h='';for(const ch of s.normalize('NFC')){const[g,u]=gl(FT[fi],ch.codePointAt(0));if(!used[fi].has(g))used[fi].set(g,u);h+=g.toString(16).padStart(4,'0')}return'<'+h+'>'};
+const wd=(fi,s,sz)=>{let w=0;for(const ch of s.normalize('NFC'))w+=FT[fi].adv(gl(FT[fi],ch.codePointAt(0))[0]);return w*sz/FT[fi].upem};
+const txt=(x,yb,fi,sz,s)=>{cs+='BT /F'+(fi+1)+' '+sz+' Tf '+f2(x)+' '+f2(PH-yb)+' Td '+hx(fi,s)+' Tj ET\n'};
+function wrap(t,w){const out=[];String(t).split('\n').forEach(par=>{let line='';par.split(' ').forEach(word=>{let tt=line?line+' '+word:word;if(wd(0,tt,SZ)>w&&line){out.push(line);tt=word}
+while(wd(0,tt,SZ)>w&&tt.length>1){let k=tt.length;while(k>1&&wd(0,tt.slice(0,k),SZ)>w)k--;out.push(tt.slice(0,k));tt=tt.slice(k)}line=tt});out.push(line)});return out}
+const newPage=()=>{cs='0.6 w 0 G 0 g\n';y=M};
+const flush=()=>pages.push(cs);
+function chunk(cells,a,b,fi,fill){const h=(b-a)*LH+2*P;let x=M;cells.forEach((c,i)=>{const yy=f2(PH-y-h);if(fill)cs+='0.89 0.95 0.93 rg '+f2(x)+' '+yy+' '+cw[i]+' '+f2(h)+' re f 0 g\n';cs+=f2(x)+' '+yy+' '+cw[i]+' '+f2(h)+' re S\n';c.slice(a,b).forEach((l,k)=>{if(l)txt(x+P,y+P+k*LH+SZ,fi,SZ,l)});x+=cw[i]});y+=h}
+const HD=[['STT'],['Nội dung'],['Số liệu (cộng dồn)'],['Nội dung cụ thể']];
+function row(cells,fi,fill){const L=Math.max(...cells.map(c=>c.length));let a=0;while(a<L){const room=Math.floor((PH-M-y-2*P)/LH);if(room<1){flush();newPage();chunk(HD,0,1,1,true);continue}const b=Math.min(L,a+room);chunk(cells,a,b,fi,fill);a=b}}
+newPage();txt((PW-wd(1,R.title,15))/2,y+15,1,15,R.title);y+=28;
+if(R.who){const s='Người báo cáo: '+R.who;txt((PW-wd(0,s,11))/2,y+11,0,11,s);y+=22}
+if(R.rows.length){row(HD,1,true);R.rows.forEach((r,i)=>row([wrap(String(i+1),cw[0]-2*P),wrap(r.n,cw[1]-2*P),wrap(numLines(r).join('\n'),cw[2]-2*P),wrap(noteLines(R,r).join('\n'),cw[3]-2*P)],0,false))}
+else txt(M,y+SZ,0,SZ,'Không có dữ liệu trong kỳ này.');
+flush();return buildPdf(pages,FT,used)}
+async function pdfBlob(R){try{return await pdfText(R)}catch(e){msg('Không nạp được font, dùng PDF dạng ảnh (không sao chép chữ được).');return makePdf(pdfPages(R))}}
+function crc32(b){let t=crc32.t,x=-1;if(!t){t=crc32.t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}for(let i=0;i<b.length;i++)x=t[(x^b[i])&255]^(x>>>8);return(x^-1)>>>0}
+function zipBlob(files,mime){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+files.forEach(f=>{const nm=enc.encode(f.n),d=enc.encode(f.d),c=crc32(d),h=new DataView(new ArrayBuffer(30));
+h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(12,0x21,true);h.setUint32(14,c,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nm.length,true);
+parts.push(new Uint8Array(h.buffer),nm,d);
+const g=new DataView(new ArrayBuffer(46));g.setUint32(0,0x02014b50,true);g.setUint16(4,20,true);g.setUint16(6,20,true);g.setUint16(8,0x0800,true);g.setUint16(14,0x21,true);g.setUint32(16,c,true);g.setUint32(20,d.length,true);g.setUint32(24,d.length,true);g.setUint16(28,nm.length,true);g.setUint32(42,off,true);
+cen.push(new Uint8Array(g.buffer),nm);off+=30+nm.length+d.length});
+const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:mime})}
+const MIME_DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+function noteLines(R,r){return r.ds.filter(e=>e.t).map(e=>(R.t!='d'?vn(e.d).slice(0,5)+(R.sc=='all'?' ['+mname(e)+']':'')+': ':(R.sc=='all'?'['+mname(e)+'] ':''))+e.t)}
+function numLines(r){return Object.entries(r.sm).map(([l,o])=>l+': '+(+o.x.toFixed(4))+(o.u?' '+o.u:''))}
+function docxBlob(R){
+const run=(t,b,sz)=>'<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'+(b?'<w:b/>':'')+'<w:sz w:val="'+sz+'"/></w:rPr><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r>';
+const par=(t,b,sz,jc)=>'<w:p><w:pPr><w:spacing w:after="60"/>'+(jc?'<w:jc w:val="'+jc+'"/>':'')+'</w:pPr>'+(t===''?'':run(t,b,sz))+'</w:p>';
+const W=[560,2100,2900,4362];
+const cell=(i,ls,b,fill)=>'<w:tc><w:tcPr><w:tcW w:w="'+W[i]+'" w:type="dxa"/>'+(fill?'<w:shd w:val="clear" w:color="auto" w:fill="E3F1EE"/>':'')+'</w:tcPr>'+(ls.length?ls:['']).map(l=>par(l,b,24)).join('')+'</w:tc>';
+const tr=(cs,b,fill)=>'<w:tr>'+cs.map((l,i)=>cell(i,l,b,fill)).join('')+'</w:tr>';
+const bd=['top','left','bottom','right','insideH','insideV'].map(s=>'<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="000000"/>').join('');
+let body=par(R.title,true,28,'center')+(R.who?par('Người báo cáo: '+R.who,false,24,'center'):'')+par('',false,24);
+if(R.rows.length)body+='<w:tbl><w:tblPr><w:tblW w:w="9922" w:type="dxa"/><w:tblBorders>'+bd+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+W.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>'+tr([['STT'],['Nội dung'],['Số liệu (cộng dồn)'],['Nội dung cụ thể']],true,true)+R.rows.map((r,i)=>tr([[String(i+1)],[r.n],numLines(r),noteLines(R,r)],false,false)).join('')+'</w:tbl><w:p/>';
+else body+=par('Không có dữ liệu trong kỳ này.',false,24);
+const doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+return zipBlob([{n:'[Content_Types].xml',d:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},
+{n:'_rels/.rels',d:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+{n:'word/document.xml',d:doc}],MIME_DOCX)}
+async function expWord(R){R=R||build();dl(fname(R,'docx'),docxBlob(R),MIME_DOCX);kho(R,'Tải Word')}
+async function shareFile(R){R=R||build();const f=new File([docxBlob(R)],fname(R,'docx'),{type:MIME_DOCX});
 try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});kho(R,'Chia sẻ Word');return}}catch(e){if(e&&e.name=='AbortError')return}
 msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải file về, hãy gửi file từ máy.');expWord(R)}
-function expPdf(R){R=R||build();dl(fname(R,'pdf'),makePdf(pdfPages(R)),'application/pdf');kho(R,'Tải PDF')}
-async function sharePdf(R){R=R||build();const f=new File([makePdf(pdfPages(R))],fname(R,'pdf'),{type:'application/pdf'});
+async function expPdf(R){R=R||build();dl(fname(R,'pdf'),await pdfBlob(R),'application/pdf');kho(R,'Tải PDF')}
+async function sharePdf(R){R=R||build();const f=new File([await pdfBlob(R)],fname(R,'pdf'),{type:'application/pdf'});
 try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:R.title});kho(R,'Chia sẻ PDF');return}}catch(e){if(e&&e.name=='AbortError')return}
 msg('Máy này chưa chia sẻ được file trực tiếp. Đang tải PDF về, hãy gửi file từ máy.');expPdf(R)}
 function expCsv(R){R=R||build();let s='\ufeffNội dung;Chỉ tiêu;Tổng;Đơn vị\n';R.rows.forEach(r=>{const k=Object.entries(r.sm);if(!k.length)s+=r.n+';;;\n';k.forEach(([l,o])=>s+=[r.n,l,+o.x.toFixed(4),o.u].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(';')+'\n')});dl(fname(R,'csv'),s,'text/csv');kho(R,'Tải Excel')}
@@ -261,6 +340,7 @@ function delKho(i){S.kho.splice(i,1);save();vKh()}
 function delRcv(i){S.rcv.splice(i,1);save();vKh()}
 function clrKho(){if(confirm('Xóa toàn bộ báo cáo trong kho? Dữ liệu nhập hằng ngày không bị xóa.')){S.kho=[];S.rcv=[];save();vKh()}}
 
+loadFonts().catch(()=>{});
 load();show('in');
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 </script>
